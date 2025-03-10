@@ -101,65 +101,46 @@ for (h in 1:H) {
 
 ### d) Approach 2: Projection Method ----
 
-M <- 5
-h <- H:(H+M - 1)
+sigma.squ <- 1 # Variance of white noise
+M <- 5 # Number of past values used for forecasting
+theta <- c(1, -0.5, 0.3, -0.2) # Including theta_0 = 1 by convention
 
-gamma.func <- function(h, macoeffs,sigmasqu) {
-  theta <- c(1, macoeffs)
-  if (h > 3) {
-    return(0)
-  } else {
-    sum_val <- 0
-    for (j in 0:(3 - h)) {
-      sum_val <- sum_val + theta[j + 1] * theta[j + h + 1]
-    }
-    return(sigmasqu * sum_val)
+# Function to compute autocovariance of an MA(3) process
+gamma_h <- function(h, theta, sigma.squ) {
+  if (h > 3) return(0)
+  sum <- 0
+  for (j in 0:(3 - h)) {
+    sum <- sum + theta[j + 1] * theta[j + h + 1]
   }
+  return(sigma.squ * sum)
 }
 
-gamma.m <- sapply(h, gamma.func, macoeffs = ma.coeffs, sigmasqu = 1)
-
-# Construct covariance matrix Gamma_m (MxM)
+# Compute autocovariance matrix Gamma_m
 Gamma_m <- matrix(0, nrow = M, ncol = M)
 for (i in 1:M) {
   for (j in 1:M) {
-    Gamma_m[i, j] <- gamma[abs(i - j) + 1]
+    Gamma_m[i, j] <- gamma_h(abs(i - j), theta, sigma.squ)
   }
 }
 
-# Invert Gamma_m
-Gamma_m_inv <- ginv(Gamma_m)  # Moore-Penrose inverse to avoid singularity issues
-
-# Initialize forecast matrix
+# Matrix for forecasted values using projection method
 Xhat.2 <- matrix(0, nrow = N + H, ncol = K)
 
+# Compute forecasts for each simulation
 for (k in 1:K) {
-  # Construct X_t^(m) for each trajectory
-  X_t_m <- matrix(0, nrow = N - M, ncol = M)
-  
-  for (t in (M + 1):N) {
-    X_t_m[t - M, ] <- x[t:(t - M + 1), k]
-  }
-  
   for (h in 1:H) {
-    # Create gamma_h^(m) vector
-    gamma_h_m <- gamma[(h + 1):(h + M)]
+    # Compute gamma_h vector for each h
+    gamma_h_vec <- sapply(0:(M - 1), function(j) gamma_h(h + j, theta, sigma.squ))
+    alpha_h <- solve(Gamma_m, gamma_h_vec)
     
-    # Compute optimal coefficients α_h^(m)
-    alpha_h_m <- Gamma_m_inv %*% gamma_h_m
-    
-    # Forecast using projection formula
-    for (t in N:(N + H - 1)) {
-      if (t - M + 1 > 0) {
-        Xhat.2[t + h, k] <- sum(alpha_h_m * x[t:(t - M + 1), k])
-      }
-    }
+    # Use last M observations for forecasting
+    X_t <- x[N:(N - M + 1), k]
+    Xhat.2[N + h, k] <- sum(alpha_h * X_t)
   }
 }
 
 # Compute MSE for Approach 2
 approach2.mse <- numeric(H)
-
 for (h in 1:H) {
   errors.squ.2 <- numeric(K)
   for (k in 1:K) {
@@ -168,18 +149,75 @@ for (h in 1:H) {
   approach2.mse[h] <- mean(errors.squ.2)
 }
 
-print(approach2.mse)
-
-
-
-
-
-
-
-
-
-
-
 print(optimal.mse)
 print(approach1.mse)
 print(approach2.mse)
+
+### e) Compare Forecasting Methods ----
+
+# Plot MSEs of Approach 1, Approach 2, and Optimal Forecasts
+df_mse <- data.frame(
+  Horizon = 1:H,
+  Optimal = optimal.mse,
+  Approach1 = approach1.mse,
+  Approach2 = approach2.mse
+)
+
+ggplot(df_mse, aes(x = Horizon)) +
+  geom_line(aes(y = Optimal, color = "Optimal Forecast"), size = 1) +
+  geom_line(aes(y = Approach1, color = "Approach 1"), size = 1) +
+  geom_line(aes(y = Approach2, color = "Approach 2 (M=5)"), size = 1) +
+  labs(title = "Comparison of MSEs for Forecasting Approaches",
+       x = "Forecast Horizon (h)", 
+       y = "Mean Squared Error (MSE)") +
+  scale_color_manual(values = c("red", "blue", "black")) +
+  theme_minimal()
+
+# Investigate Accuracy of Projection Method for Different M
+M_values <- 1:10  # Test different values of M
+MSE_results <- matrix(0, nrow = H, ncol = length(M_values))
+
+for (m_idx in seq_along(M_values)) {
+  M <- M_values[m_idx]
+  
+  # Compute Gamma_m matrix
+  Gamma_m <- matrix(0, nrow = M, ncol = M)
+  for (i in 1:M) {
+    for (j in 1:M) {
+      Gamma_m[i, j] <- gamma_h(abs(i - j), theta, sigma.squ)
+    }
+  }
+  
+  # Compute MSE for each forecast horizon h
+  for (h in 1:H) {
+    gamma_h_vec <- sapply(0:(M - 1), function(j) gamma_h(h + j, theta, sigma.squ))
+    alpha_h <- solve(Gamma_m, gamma_h_vec)
+    
+    errors <- numeric(K)
+    for (k in 1:K) {
+      X_t <- tail(x[1:N, k], M)
+      X_hat <- sum(alpha_h * X_t)
+      errors[k] <- (x[N + h, k] - X_hat)^2
+    }
+    
+    MSE_results[h, m_idx] <- mean(errors)
+  }
+}
+
+# Convert MSE results to dataframe for plotting
+df_mse_m <- data.frame(
+  Horizon = rep(1:H, times = length(M_values)),
+  MSE = as.vector(MSE_results),
+  M = rep(M_values, each = H)
+)
+
+# Plot MSEs for different M values
+ggplot(df_mse_m, aes(x = Horizon, y = MSE, color = factor(M))) +
+  geom_line(size = 1) +
+  geom_point(size = 2) +
+  labs(title = "Effect of M on Projection Method Accuracy",
+       x = "Forecast Horizon (h)", 
+       y = "Mean Squared Error (MSE)",
+       color = "M value") +
+  theme_minimal()
+
