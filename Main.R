@@ -149,8 +149,6 @@ for (h in 1:H) {
   mse.matrix[h, 3] <- mean(errors.squ.2)
 }
 
-print(mse.matrix)
-
 ### e) Compare Forecasting Methods ----
 
 df.mse <- data.frame(
@@ -160,8 +158,11 @@ df.mse <- data.frame(
   Approach2 = mse.matrix[,3]
 )
 
+print(df.mse)
+
 ggplot(df.mse, aes(x = Horizon)) +
-  geom_line(aes(y = Optimal, color = "Optimal Forecast"), size = 1) +
+  geom_line(data = df.mse, aes(x = Horizon, y = Optimal), 
+            size = 1, linetype = "dashed", ,color = "black") +
   geom_line(aes(y = Approach1, color = "Approach 1"), size = 1) +
   geom_line(aes(y = Approach2, color = "Approach 2 (M=5)"), size = 1) +
   labs(title = "Comparison of MSEs for Forecasting Approaches",
@@ -201,19 +202,21 @@ for (j in seq_along(M.grid)) {
 }
 
 # Convert MSE results to dataframe for plotting
-df_mse_m <- data.frame(
+df.mse.m <- data.frame(
   Horizon = rep(1:H, times = length(M.grid)),
   MSE = as.vector(mse.results),
   M = rep(M.grid, each = H)
 )
 
-# Plot MSEs for different M values
-ggplot(df_mse_m, aes(x = Horizon, y = MSE, color = factor(M))) +
+ggplot(df.mse.m, aes(x = Horizon, y = MSE, color = factor(M))) +
   geom_line(size = 1) +
   geom_point(size = 2) +
+  geom_line(data = df.mse, aes(x = Horizon, y = Optimal), 
+            size = 1, linetype = "dashed", color = "black") +
   labs(title = "Effect of M on Projection Method Accuracy",
        x = "Forecast Horizon (h)", 
        y = "Mean Squared Error (MSE)",
        color = "M value") +
   theme_minimal()
+
 
