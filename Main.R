@@ -30,6 +30,9 @@ for (k in 1:K) {
 
 ### b) Optimal MSE Forecasts ----
 
+# Initiate a matrix for the MSE for each approach
+mse.matrix <- matrix(0, nrow = H, ncol = 3)
+
 # Initiate matrix for optimal MSE forecast
 Xhat.opt <- matrix(0, nrow = N + H, ncol = K)
 
@@ -55,11 +58,8 @@ for (h in 1:H) {
   }
   
   # Compute the mean squared error for each horizon
-  optimal.mse[h] <- mean(errors.squ.opt)
+  mse.matrix[h, 1] <- mean(errors.squ.opt)
 }
-
-print(optimal.mse)
-
 
 ### c) Approach 1: Naive Error Sequence Reconstruction ----
 
@@ -96,7 +96,7 @@ for (h in 1:H) {
   for (k in 1:K) {
     errors.squ.1[k] <- (x[N + h, k] - Xhat.1[N + h, k])^2
   }
-  approach1.mse[h] <- mean(errors.squ.1)
+  mse.matrix[h, 2] <- mean(errors.squ.1)
 }
 
 ### d) Approach 2: Projection Method ----
@@ -146,24 +146,21 @@ for (h in 1:H) {
   for (k in 1:K) {
     errors.squ.2[k] <- (x[N + h, k] - Xhat.2[N + h, k])^2
   }
-  approach2.mse[h] <- mean(errors.squ.2)
+  mse.matrix[h, 3] <- mean(errors.squ.2)
 }
 
-print(optimal.mse)
-print(approach1.mse)
-print(approach2.mse)
+print(mse.matrix)
 
 ### e) Compare Forecasting Methods ----
 
-# Plot MSEs of Approach 1, Approach 2, and Optimal Forecasts
-df_mse <- data.frame(
+df.mse <- data.frame(
   Horizon = 1:H,
-  Optimal = optimal.mse,
-  Approach1 = approach1.mse,
-  Approach2 = approach2.mse
+  Optimal = mse.matrix[,1],
+  Approach1 = mse.matrix[,2],
+  Approach2 = mse.matrix[,3]
 )
 
-ggplot(df_mse, aes(x = Horizon)) +
+ggplot(df.mse, aes(x = Horizon)) +
   geom_line(aes(y = Optimal, color = "Optimal Forecast"), size = 1) +
   geom_line(aes(y = Approach1, color = "Approach 1"), size = 1) +
   geom_line(aes(y = Approach2, color = "Approach 2 (M=5)"), size = 1) +
@@ -173,12 +170,11 @@ ggplot(df_mse, aes(x = Horizon)) +
   scale_color_manual(values = c("red", "blue", "black")) +
   theme_minimal()
 
-# Investigate Accuracy of Projection Method for Different M
-M_values <- 1:10  # Test different values of M
-MSE_results <- matrix(0, nrow = H, ncol = length(M_values))
+M.grid <- 1:15
+mse.results <- matrix(0, nrow = H, ncol = length(M.grid))
 
-for (m_idx in seq_along(M_values)) {
-  M <- M_values[m_idx]
+for (j in seq_along(M.grid)) {
+  M <- M.grid[j]
   
   # Compute Gamma_m matrix
   Gamma_m <- matrix(0, nrow = M, ncol = M)
@@ -200,15 +196,15 @@ for (m_idx in seq_along(M_values)) {
       errors[k] <- (x[N + h, k] - X_hat)^2
     }
     
-    MSE_results[h, m_idx] <- mean(errors)
+    mse.results[h, j] <- mean(errors)
   }
 }
 
 # Convert MSE results to dataframe for plotting
 df_mse_m <- data.frame(
-  Horizon = rep(1:H, times = length(M_values)),
-  MSE = as.vector(MSE_results),
-  M = rep(M_values, each = H)
+  Horizon = rep(1:H, times = length(M.grid)),
+  MSE = as.vector(mse.results),
+  M = rep(M.grid, each = H)
 )
 
 # Plot MSEs for different M values
