@@ -44,9 +44,6 @@ for (k in 1:K) {
   }
 }
 
-# Initiate a vector for the MSE for the H forecast periods
-optimal.mse <- numeric(H)
-
 # Compute the Mean Squared Error (MSE) for each forecast horizon
 for (h in 1:H) {
   
@@ -89,8 +86,6 @@ for (k in 1:K) {
 }
 
 # Calculate MSE for Approach 1
-approach1.mse <- numeric(H)
-
 for (h in 1:H) {
   errors.squ.1 <- numeric(K)
   for (k in 1:K) {
@@ -140,7 +135,6 @@ for (k in 1:K) {
 }
 
 # Compute MSE for Approach 2
-approach2.mse <- numeric(H)
 for (h in 1:H) {
   errors.squ.2 <- numeric(K)
   for (k in 1:K) {
@@ -171,7 +165,7 @@ ggplot(df.mse, aes(x = Horizon)) +
   scale_color_manual(values = c("red", "blue", "black")) +
   theme_minimal()
 
-M.grid <- 1:15
+M.grid <- 1:25
 mse.results <- matrix(0, nrow = H, ncol = length(M.grid))
 
 for (j in seq_along(M.grid)) {
@@ -220,3 +214,14 @@ ggplot(df.mse.m, aes(x = Horizon, y = MSE, color = factor(M))) +
   theme_minimal()
 
 
+df.mse.horizon <- df.mse.m %>%
+  filter(Horizon %in% c(1, 2, 3))
+ggplot(df.mse.horizon, aes(x = M, y = MSE, color = factor(Horizon))) +
+  geom_line(size = 1) +
+  geom_point(size = 2) +
+  labs(title = "Effect of M on MSE for Different Forecast Horizons",
+       x = "M value (Number of Past Observations)",
+       y = "Mean Squared Error (MSE)",
+       color = "Horizon") +
+  theme_minimal() +
+  scale_color_manual(values = c("red", "blue", "green")) 
