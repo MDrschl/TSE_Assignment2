@@ -43,8 +43,7 @@ mse.matrix <- matrix(0, nrow = H, ncol = 3)
 Xhat.opt <- matrix(0, nrow = N + H, ncol = K)
 
 for (k in 1:K) {
-  #for (t in (N - H + 1):N) (SUGGESTION MOHAMED)
-  for (t in N:(N + H - 1)) {  
+  for (t in (N - H + 1):N) {  
     if (t + 1 <= N + H) Xhat.opt[t + 1, k] <- ma.coeffs[1] * errors[t, k] + ma.coeffs[2] * errors[t - 1, k] + ma.coeffs[3] * errors[t - 2, k]
     if (t + 2 <= N + H) Xhat.opt[t + 2, k] <- ma.coeffs[2] * errors[t, k] + ma.coeffs[3] * errors[t - 1, k]
     if (t + 3 <= N + H) Xhat.opt[t + 3, k] <- ma.coeffs[3] * errors[t, k]
@@ -85,8 +84,8 @@ for (k in 1:K) {
   }
   
   # Forecast future values using reconstructed errors
-  #for (t in (N - H + 1):N) (SUGGESTION MOHAMED)
-  for (t in N:(N + H - 1)) {
+
+  for (t in (N - H + 1):N) {
     if (t + 1 <= N + H) Xhat.1[t + 1, k] <- ma.coeffs[1] * err.recon[t, k] + ma.coeffs[2] * err.recon[t - 1, k] + ma.coeffs[3] * err.recon[t - 2, k]
     if (t + 2 <= N + H) Xhat.1[t + 2, k] <- ma.coeffs[2] * err.recon[t, k] + ma.coeffs[3] * err.recon[t - 1, k]
     if (t + 3 <= N + H) Xhat.1[t + 3, k] <- ma.coeffs[3] * err.recon[t, k]
@@ -163,8 +162,7 @@ df.mse <- data.frame(
 print(df.mse)
 
 ggplot(df.mse, aes(x = Horizon)) +
-  geom_line(data = df.mse, aes(x = Horizon, y = Optimal), 
-            size = 1, linetype = "dashed", ,color = "black") +
+  geom_line(aes(y = Optimal, color = "Optimal"), linewidth = 1) +
   geom_line(aes(y = Approach1, color = "Approach 1"), linewidth = 1) +
   geom_line(aes(y = Approach2, color = "Approach 2 (M=5)"), linewidth = 1) +
   labs(title = "Comparison of MSEs for Forecasting Approaches",
@@ -173,7 +171,7 @@ ggplot(df.mse, aes(x = Horizon)) +
   scale_color_manual(values = c("red", "blue", "black")) +
   theme_minimal()
 
-M.grid <- 1:25
+M.grid <- 1:10
 mse.results <- matrix(0, nrow = H, ncol = length(M.grid))
 
 for (j in seq_along(M.grid)) {
