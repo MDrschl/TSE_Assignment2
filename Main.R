@@ -168,38 +168,48 @@ ggplot(df.mse, aes(x = Horizon)) +
   labs(title = "Comparison of MSEs for Forecasting Approaches",
        x = "Forecast Horizon (h)", 
        y = "Mean Squared Error (MSE)") +
-  scale_color_manual(values = c("red", "blue", "black")) +
-  theme_minimal()
+  scale_color_discrete(name = "Mehtod") +
+  theme_classic()
 
-M.grid <- 1:10
+M.grid <- 1:15
 mse.results <- matrix(0, nrow = H, ncol = length(M.grid))
 
 for (j in seq_along(M.grid)) {
   M <- M.grid[j]
-  
-  # Compute Gamma_m matrix
-  Gamma_m <- matrix(0, nrow = M, ncol = M)
-  for (i in 1:M) {
-    for (j in 1:M) {
+  # Compute autocovariance matrix Gamma_m
+  Gamma_m <- matrix(0, nrow = j, ncol = j)
+  for (i in 1:j) {
+    for (j in 1:j) {
       Gamma_m[i, j] <- gamma_h(abs(i - j), theta, sigma.squ)
     }
   }
   
-  # Compute MSE for each forecast horizon h
-  for (h in 1:H) {
-    gamma_h_vec <- sapply(0:(M - 1), function(j) gamma_h(h + j, theta, sigma.squ))
-    alpha_h <- solve(Gamma_m, gamma_h_vec)
-    
-    errors <- numeric(K)
-    for (k in 1:K) {
-      X_t <- tail(x[1:N, k], M)
-      X_hat <- sum(alpha_h * X_t)
-      errors[k] <- (x[N + h, k] - X_hat)^2
+  # Matrix for forecasted values using projection method
+  Xhat.2 <- matrix(0, nrow = N + H, ncol = K)
+  
+  # Compute forecasts for each simulation
+  for (k in 1:K) {
+    for (h in 1:H) {
+      # Compute gamma_h vector for each h
+      gamma_h_vec <- sapply(0:(j - 1), function(j) gamma_h(h + j, theta, sigma.squ))
+      alpha_h <- solve(Gamma_m, gamma_h_vec)
+      
+      # Use last M observations for forecasting
+      X_t <- x[N:(N - j + 1), k]
+      Xhat.2[N + h, k] <- sum(alpha_h * X_t)
     }
-    
-    mse.results[h, j] <- mean(errors)
+  }
+  
+  # Compute MSE for Approach 2
+  for (h in 1:H) {
+    errors.squ.2 <- numeric(K)
+    for (k in 1:K) {
+      errors.squ.2[k] <- (x[N + h, k] - Xhat.2[N + h, k])^2
+    }
+    mse.results[h, j] <- mean(errors.squ.2)
   }
 }
+
 
 # Convert MSE results to dataframe for plotting
 df.mse.m <- data.frame(
@@ -212,9 +222,23 @@ ggplot(df.mse.m, aes(x = Horizon, y = MSE, color = factor(M))) +
   geom_line(size = 1) +
   geom_point(size = 2) +
   geom_line(data = df.mse, aes(x = Horizon, y = Optimal), 
-            size = 1, linetype = "dashed", color = "black") +
+            size = 1, linetype = "dashed", color = "black", linewidth = 0.4) +
   labs(title = "Effect of M on Projection Method Accuracy",
        x = "Forecast Horizon (h)", 
-       y = "Mean Squared Error (MSE)",
-       color = "M value") +
-  theme_minimal()
+       y = "Mean Squared Error (MSE)") +
+  theme_classic()
+
+
+# Plotting the MSE for each horizon across different M values
+ggplot(df.mse.m, aes(x = M, y = MSE, color = factor(Horizon))) +
+  geom_line() +
+  geom_point() +
+  labs(
+    title = "MSE for Different M Values and Forecast Horizons",
+    x = "M",
+    y = "MSE",
+    color = "Forecast Horizon"
+  ) +
+  scale_color_discrete(name = "Forecast Horizon") +
+  geom_hline(data = df.mse, aes(yintercept = Optimal), linetype = "dashed", linewidth = 0.4) +
+  theme_classic()
