@@ -1,3 +1,9 @@
+# Time Series Econometrics: Assignment 1, Part 2
+
+# Maximilian Droschl (21-616-412)
+# Mohamed Ayadi (18-814-996)
+# Aram Jivan Chetirian (19-607-258)
+
 rm(list = ls(all = TRUE))
 
 library(tidyverse)
@@ -157,8 +163,8 @@ print(df.mse)
 ggplot(df.mse, aes(x = Horizon)) +
   geom_line(data = df.mse, aes(x = Horizon, y = Optimal), 
             size = 1, linetype = "dashed", ,color = "black") +
-  geom_line(aes(y = Approach1, color = "Approach 1"), size = 1) +
-  geom_line(aes(y = Approach2, color = "Approach 2 (M=5)"), size = 1) +
+  geom_line(aes(y = Approach1, color = "Approach 1"), linewidth = 1) +
+  geom_line(aes(y = Approach2, color = "Approach 2 (M=5)"), linewidth = 1) +
   labs(title = "Comparison of MSEs for Forecasting Approaches",
        x = "Forecast Horizon (h)", 
        y = "Mean Squared Error (MSE)") +
@@ -212,16 +218,3 @@ ggplot(df.mse.m, aes(x = Horizon, y = MSE, color = factor(M))) +
        y = "Mean Squared Error (MSE)",
        color = "M value") +
   theme_minimal()
-
-
-df.mse.horizon <- df.mse.m %>%
-  filter(Horizon %in% c(1, 2, 3))
-ggplot(df.mse.horizon, aes(x = M, y = MSE, color = factor(Horizon))) +
-  geom_line(size = 1) +
-  geom_point(size = 2) +
-  labs(title = "Effect of M on MSE for Different Forecast Horizons",
-       x = "M value (Number of Past Observations)",
-       y = "Mean Squared Error (MSE)",
-       color = "Horizon") +
-  theme_minimal() +
-  scale_color_manual(values = c("red", "blue", "green")) 
