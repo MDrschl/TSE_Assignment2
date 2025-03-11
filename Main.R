@@ -43,6 +43,7 @@ mse.matrix <- matrix(0, nrow = H, ncol = 3)
 Xhat.opt <- matrix(0, nrow = N + H, ncol = K)
 
 for (k in 1:K) {
+  #for (t in (N - H + 1):N) (SUGGESTION MOHAMED)
   for (t in N:(N + H - 1)) {  
     if (t + 1 <= N + H) Xhat.opt[t + 1, k] <- ma.coeffs[1] * errors[t, k] + ma.coeffs[2] * errors[t - 1, k] + ma.coeffs[3] * errors[t - 2, k]
     if (t + 2 <= N + H) Xhat.opt[t + 2, k] <- ma.coeffs[2] * errors[t, k] + ma.coeffs[3] * errors[t - 1, k]
