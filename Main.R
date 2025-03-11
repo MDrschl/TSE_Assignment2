@@ -85,6 +85,7 @@ for (k in 1:K) {
   }
   
   # Forecast future values using reconstructed errors
+  #for (t in (N - H + 1):N) (SUGGESTION MOHAMED)
   for (t in N:(N + H - 1)) {
     if (t + 1 <= N + H) Xhat.1[t + 1, k] <- ma.coeffs[1] * err.recon[t, k] + ma.coeffs[2] * err.recon[t - 1, k] + ma.coeffs[3] * err.recon[t - 2, k]
     if (t + 2 <= N + H) Xhat.1[t + 2, k] <- ma.coeffs[2] * err.recon[t, k] + ma.coeffs[3] * err.recon[t - 1, k]
